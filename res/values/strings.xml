@@ -2,6 +2,8 @@
 <resources>
 
     <string name="app_name">Pebblin</string>
+    <string name="realbuttontext">Just play some music!</string>
+    <string name="huebuttontext">Connect to HUE</string>
     <string name="action_settings">Settings</string>
     <string name="no_bridge">No Bridge Found.   Start Bridge Search</string>
     <string name="btn_refresh">Refresh</string>

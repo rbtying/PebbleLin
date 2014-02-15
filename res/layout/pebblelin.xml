@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res/com.lynbrook.pebblin"
     android:id="@+id/TableLayout01"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
@@ -12,22 +11,53 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal" >
 
-        <LinearLayout
+        <Spinner
+            android:id="@+id/presetSpinner"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical" >
+            android:layout_weight="1" />
 
-            <Spinner
-                android:id="@+id/presetSpinner"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-        </LinearLayout>
+        <TextView
+            android:id="@+id/noteName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
     </LinearLayout>
 
-    <Button
+    <!--
+        <Button
         android:id="@+id/notebutton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Button" />
+    -->
+
+    <Button
+        android:id="@+id/Button1"
+        android:layout_width="fill_parent"
+        android:layout_height="90dp"
+        android:layout_marginTop="60dp"
+        android:text="C/G" />
+
+    <Button
+        android:id="@+id/Button2"
+        android:layout_width="fill_parent"
+        android:layout_height="90dp"
+        android:layout_marginTop="30dp"
+        android:text="D/A" />
+
+    <Button
+        android:id="@+id/Button3"
+        android:layout_width="fill_parent"
+        android:layout_height="90dp"
+        android:layout_marginTop="30dp"
+        android:text="E/B" />
+
+    <Button
+        android:id="@+id/Button4"
+        android:layout_width="fill_parent"
+        android:layout_height="90dp"
+        android:layout_marginTop="20dp"
+        android:text="F/C" />
 
 </LinearLayout>

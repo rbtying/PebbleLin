@@ -16,9 +16,8 @@
 
 package com.lynbrook.pebblelin;
 
-import java.util.Hashtable;
 import java.util.List;
-import java.util.Random;
+import java.util.Timer;
 import java.util.UUID;
 
 import android.annotation.TargetApi;
@@ -30,23 +29,24 @@ import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
-import android.view.View.OnClickListener;
+import android.view.View.OnTouchListener;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
+import android.widget.TextView;
 
 import com.getpebble.android.kit.PebbleKit;
 import com.getpebble.android.kit.util.PebbleDictionary;
 import com.levien.synthesizer.core.midi.MidiListener;
+import com.levien.synthesizer.core.music.Note;
 import com.lynbrook.pebblin.R;
-import com.philips.lighting.hue.listener.PHLightListener;
 import com.philips.lighting.hue.sdk.PHHueSDK;
 import com.philips.lighting.model.PHBridge;
-import com.philips.lighting.model.PHHueError;
 import com.philips.lighting.model.PHLight;
 import com.philips.lighting.model.PHLightState;
 
@@ -54,12 +54,10 @@ import com.philips.lighting.model.PHLightState;
  * Activity for simply playing the piano. This version is hacked up to send MIDI to the C++ engine.
  * This needs to be refactored to make it cleaner.
  */
-public class PebblinActivity extends SynthActivity implements OnSharedPreferenceChangeListener {
+public class PebblinActivity extends SynthActivity implements OnSharedPreferenceChangeListener,
+        OnTouchListener {
 
   private MidiListener midi = null;
-
-  private boolean playing = false;
-  private boolean notrunning = true;
 
   private PHHueSDK phHueSDK;
   private static final int MAX_HUE = 65535;
@@ -68,14 +66,25 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
   private int g[] = new int[3];
   private int a[] = new int[3];
 
+  private Button[] buttons;
+  private boolean buttonpressed[] = new boolean[4];
+  private int p_val = 0;
+  private int note_idx = 0;
+
+  private int notes[] = { 60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79, 81, 83, 84, 86, 88, 89,
+          91, 93, 95, 96, 98, 100 };
+
   private final static UUID PEBBLE_APP_UUID = UUID
           .fromString("ee0315aa-8439-48b6-a622-a05a0a99c640");
 
   private PebbleKit.PebbleDataReceiver dataReceiver;
 
+  Timer timer = new Timer();
+
   @Override
   public void onCreate(Bundle savedInstanceState) {
     Log.d("synth", "activity onCreate " + getIntent());
+    setTitle(R.string.app_name);
     super.onCreate(savedInstanceState);
     getWindow().addFlags(
             WindowManager.LayoutParams.FLAG_FULLSCREEN
@@ -85,60 +94,48 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
 
     presetSpinner_ = (Spinner) findViewById(R.id.presetSpinner);
 
-    Button b = (Button) findViewById(R.id.notebutton);
-    b.setOnClickListener(new OnClickListener() {
+    buttons = new Button[4];
+    buttons[0] = (Button) findViewById(R.id.Button1);
+    buttons[1] = (Button) findViewById(R.id.Button2);
+    buttons[2] = (Button) findViewById(R.id.Button3);
+    buttons[3] = (Button) findViewById(R.id.Button4);
 
-      public void onClick(View arg0) {
-        randomLights();
-        Log.v("Pebblin", "click");
-        if (midi != null) {
-          if (playing) {
-            midi.onNoteOff(0, 69, 0);
-            playing = false;
-          } else {
-            midi.onNoteOn(0, 69, 127);
-            playing = true;
-          }
-        }
-      }
-    });
-  }
+    System.out.println(buttons[0]);
 
-  // If you want to handle the response from the bridge, create a PHLightListener object.
-  PHLightListener listener = new PHLightListener() {
-
-    public void onSuccess() {}
-
-    public void onStateUpdate(Hashtable<String, String> arg0, List<PHHueError> arg1) {
-      Log.w("HI", "Light has updated");
-      notrunning = true;
+    for (int i = 0; i < buttons.length; i++) {
+      buttons[i].setOnTouchListener(this);
     }
 
-    public void onError(int arg0, String arg1) {}
-  };
+  }
 
-  public void randomLights() {
-    notrunning = false;
+  static boolean derp = false;
+
+  public void updateLightbulb() {
+    Log.v("LIGHTS", "UPDAITING DA LIGHTSES");
     PHBridge bridge = phHueSDK.getSelectedBridge();
 
     if (bridge != null) {
       List<PHLight> allLights = bridge.getResourceCache().getAllLights();
-      Random rand = new Random();
 
       PHLightState lightState = new PHLightState();
-      lightState.setHue(rand.nextInt(MAX_HUE));
-      lightState.setTransitionTime(1);
-      // To validate your lightstate is valid (before sending to the bridge) you can use:
-      // String validState = lightState.validateState();
-      bridge.updateLightState(allLights.get(0), lightState, listener);
-      // bridge.updateLightState(light, lightState); // If no bridge response is required then use
-      // this simpler form.
+
+      lightState.setHue((int) (note_idx * 1.0 / notes.length * MAX_HUE));
+      lightState.setTransitionTime(0);
+
+      for (PHLight light : allLights) {
+        // To validate your lightstate is valid (before sending to the bridge) you can use:
+        // String validState = lightState.validateState();
+        bridge.updateLightState(light, lightState);
+        // bridge.updateLightState(light, lightState); // If no bridge response is required then use
+        // this simpler form.
+      }
     }
   }
 
   @Override
   protected void onDestroy() {
     Log.d("synth", "activity onDestroy");
+
     PHBridge bridge = phHueSDK.getSelectedBridge();
     if (bridge != null) {
 
@@ -152,10 +149,10 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
     super.onDestroy();
   }
 
-  private int pval = 0;
-  private int note = 62;
-
   private void processSignal() {
+    if (midi == null) {
+      return;
+    }
     int val = v[1];
 
     double angle = -Math.atan2(g[2], g[1]);
@@ -163,29 +160,41 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
     if (Math.abs(val) < 5) {
       val = 0;
     }
-    if (pval * val <= 0) {
-      midi.onNoteOff(0, note, 0);
 
-      if (angle < 0) {
-        return;
-      } else if (angle > Math.PI / 2 + Math.PI / 6) {
-        note = 66;
-      } else if (angle < Math.PI / 2 - Math.PI / 6) {
-        note = 62;
+    if (p_val * val <= 0) {
+      midi.onNoteOff(0, notes[note_idx], 0);
+
+      int k = 0;
+
+      if (angle > Math.PI / 2 + Math.PI / 8) {
+        k = 1;
       } else {
-        note = 64;
+        k = 0;
       }
 
-      // if (pval * val < 0) {
-      midi.onNoteOn(0, note, Math.abs(val) * 2);
-      if (notrunning) {
-        randomLights();
+      boolean nobuttonpressed = true;
+      for (int i = 0; i < buttonpressed.length; i++) {
+        if (buttonpressed[i]) {
+          if (k * 4 + i < notes.length) {
+            note_idx = k * 4 + i;
+            nobuttonpressed = false;
+            break;
+          }
+        }
       }
-      // }
+      if (nobuttonpressed) {
+        val = 0;
+      }
+
+      midi.onNoteOn(0, notes[note_idx], Math.abs(val) * 3);
+      String name = Note.getName(notes[note_idx] % 12);
+      Log.v("NOTE", name);
+
+      ((TextView) findViewById(R.id.noteName)).setText(name);
+
+      updateLightbulb();
     }
-    pval = val;
-
-    Log.v("ANGLE", angle + "");
+    p_val = val;
   }
 
   @Override
@@ -217,9 +226,15 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
           g[i] = arr[i + 6];
         }
         processSignal();
-        Log.v("YAYTAG", buf.toString());
+        Log.v("DATA RECEIVER", buf.toString());
       }
     };
+    timer.scheduleAtFixedRate(new java.util.TimerTask() {
+      @Override
+      public void run() {
+        updateLightbulb();
+      }
+    }, 1000, 1000);
     PebbleKit.registerReceivedDataHandler(this, dataReceiver);
     startWatchApp(null);
   }
@@ -235,6 +250,7 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
   @Override
   protected void onPause() {
     super.onPause();
+    timer.cancel();
     SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
     prefs.unregisterOnSharedPreferenceChangeListener(this);
     if (dataReceiver != null) {
@@ -299,4 +315,22 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
   }
 
   private Spinner presetSpinner_;
+
+  public boolean onTouch(View v, MotionEvent e) {
+    for (int i = 0; i < buttons.length; i++) {
+      if (v.getId() == buttons[i].getId()) {
+        switch (e.getAction()) {
+          case MotionEvent.ACTION_UP:
+            buttonpressed[i] = false;
+            processSignal();
+            break;
+          case MotionEvent.ACTION_DOWN:
+            buttonpressed[i] = true;
+            processSignal();
+            break;
+        }
+      }
+    }
+    return false;
+  }
 }
