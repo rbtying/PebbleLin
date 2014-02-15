@@ -17,17 +17,15 @@ void send_msg() {
         return;
     }
 
-    dict_write_uint16(iter, 0, g[0]);
-    dict_write_uint16(iter, 1, g[1]);
-    dict_write_uint16(iter, 2, g[2]);
-    dict_write_uint16(iter, 3, a[0]);
-    dict_write_uint16(iter, 4, a[1]);
-    dict_write_uint16(iter, 5, a[2]);
-    dict_write_uint16(iter, 6, v[0]);
-    dict_write_uint16(iter, 7, v[1]);
-    dict_write_uint16(iter, 8, v[2]);
-
-    dict_write_end(iter);
+    dict_write_int16(iter, 0, v[0]);
+    dict_write_int16(iter, 1, v[1]);
+    dict_write_int16(iter, 2, v[2]);
+    dict_write_int16(iter, 3, a[0]);
+    dict_write_int16(iter, 4, a[1]);
+    dict_write_int16(iter, 5, a[2]);
+    dict_write_int16(iter, 6, g[0]);
+    dict_write_int16(iter, 7, g[1]);
+    dict_write_int16(iter, 8, g[2]);
 
     app_message_outbox_send();
 }
@@ -89,7 +87,7 @@ static void app_message_init(void) {
     timer = app_timer_register(100, timer_callback, NULL);
 
     // Init buffers
-    app_message_open(64, 16);
+    app_message_open(64, 16 * 9);
 }
 
 int main()
