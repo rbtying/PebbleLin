@@ -17,6 +17,7 @@
 package com.lynbrook.pebblelin;
 
 import java.util.List;
+import java.util.UUID;
 
 import android.annotation.TargetApi;
 import android.content.Intent;
@@ -35,6 +36,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
 
+import com.getpebble.android.kit.PebbleKit;
 import com.levien.synthesizer.core.midi.MidiListener;
 import com.lynbrook.pebblin.R;
 
@@ -47,6 +49,11 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
   private MidiListener midi = null;
 
   private boolean playing = false;
+
+  private final static UUID PEBBLE_APP_UUID = UUID
+          .fromString("ee0315aa-8439-48b6-a622-a05a0a99c640");
+
+  private PebbleKit.PebbleDataReceiver dataReceiver;
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
