@@ -1,0 +1,17 @@
+{
+  "uuid": "ee0315aa-8439-48b6-a622-a05a0a99c640",
+  "shortName": "pebblelin",
+  "longName": "pebblelin",
+  "companyName": "MakeAwesomeHappen",
+  "versionCode": 1,
+  "versionLabel": "1.0.0",
+  "watchapp": {
+    "watchface": false
+  },
+  "appKeys": {
+    "dummy": 0
+  },
+  "resources": {
+    "media": []
+  }
+}
