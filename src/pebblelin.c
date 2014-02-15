@@ -28,13 +28,11 @@ void send_msg() {
     dict_write_int16(iter, 8, g[2]);
 
     app_message_outbox_send();
-    app_log(APP_LOG_LEVEL_ERROR, "pebblelin.c", 31, "SENT SOMETHING"); 
 }
 
 void outbox_fail_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) 
 {
    send_msg(); 
-
 }
 
 void outbox_success_callback(DictionaryIterator *iterator, void *context)
@@ -48,19 +46,25 @@ void accel_handler(AccelData *data, uint32_t num_samples)
     // num_samples was set when calling accel_data_service_subscribe.
     static char buf[32];
 
-    g[0] = g[0] * 0.9 + data[0].x * 0.1;
-    g[1] = g[1] * 0.9 + data[0].y * 0.1;
-    g[2] = g[2] * 0.9 + data[0].z * 0.1;
+    float alpha = 0.8;
+
+    g[0] = g[0] * alpha + data->x * (1 - alpha);
+    g[1] = g[1] * alpha + data->y * (1 - alpha);
+    g[2] = g[2] * alpha + data->z * (1 - alpha);
 
     a[0] = data[0].x - g[0];
     a[1] = data[0].y - g[1];
     a[2] = data[0].z - g[2];
 
-    v[0] += a[0] * (1.0 / 50);
-    v[1] += a[1] * (1.0 / 50);
-    v[2] += a[2] * (1.0 / 50);
+    v[0] += a[0] * (10.0 / 50);
+    v[1] += a[1] * (10.0 / 50);
+    v[2] += a[2] * (10.0 / 50);
 
-    xsprintf(buf, "%d", v[1]);
+    v[0] = 0.99 * v[0];
+    v[1] = 0.99 * v[1];
+    v[2] = 0.99 * v[2];
+
+    xsprintf(buf, "%d %d", v[1], data->y);
 
     text_layer_set_text(text_layer_1, buf);
 }
@@ -72,7 +76,7 @@ void window_load(Window *window)
     text_layer_1 = text_layer_create(GRect(0, 0, 144, 144));
     layer_add_child(window_layer, text_layer_get_layer(text_layer_1));
 
-    accel_data_service_subscribe(1, accel_handler);
+    accel_data_service_subscribe(0, accel_handler);
     accel_service_set_sampling_rate(ACCEL_SAMPLING_50HZ);
 }
 
@@ -83,13 +87,13 @@ void window_unload(Window *window)
     accel_data_service_unsubscribe();
     text_layer_destroy(text_layer_1);
 }
-/*
-void timer_callback() {
-    send_msg();
 
-    timer = app_timer_register(100, timer_callback, NULL);
+void timer_callback() {
+    AccelData accel = {0, 0, 0, 0, 0};
+    accel_service_peek(&accel);
+    accel_handler(&accel, 1);
+    timer = app_timer_register(20, timer_callback, NULL);
 }
-*/
 
 static void app_message_init(void) {
     // Reduce the sniff interval for more responsive messaging at the expense of
@@ -98,11 +102,10 @@ static void app_message_init(void) {
     // unloaded
     app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 
-    //timer = app_timer_register(100, timer_callback, NULL);
+    timer = app_timer_register(20, timer_callback, NULL);
     app_message_register_outbox_failed(outbox_fail_callback);
     app_message_register_outbox_sent(outbox_success_callback);
     
-
     // Init buffers
     app_message_open(64, 16 * 9);
     send_msg();
