@@ -28,13 +28,12 @@ void send_msg() {
     dict_write_int16(iter, 8, g[2]);
 
     app_message_outbox_send();
-    app_log(APP_LOG_LEVEL_ERROR, "pebblelin.c", 31, "SENT SOMETHING"); 
 }
 
 void outbox_fail_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) 
 {
+   app_log(APP_LOG_LEVEL_ERROR, "pebblelin.c", 31, "PROBLEM"); 
    send_msg(); 
-
 }
 
 void outbox_success_callback(DictionaryIterator *iterator, void *context)
@@ -121,6 +120,7 @@ int main()
             });
     window_stack_push(window, true);
     app_event_loop();
+    app_message_deregister_callbacks();
     window_destroy(window);
 }
 
