@@ -28,6 +28,18 @@ void send_msg() {
     dict_write_int16(iter, 8, g[2]);
 
     app_message_outbox_send();
+    app_log(APP_LOG_LEVEL_ERROR, "pebblelin.c", 31, "SENT SOMETHING"); 
+}
+
+void outbox_fail_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) 
+{
+   send_msg(); 
+
+}
+
+void outbox_success_callback(DictionaryIterator *iterator, void *context)
+{
+    send_msg();
 }
 
 void accel_handler(AccelData *data, uint32_t num_samples)
@@ -71,11 +83,13 @@ void window_unload(Window *window)
     accel_data_service_unsubscribe();
     text_layer_destroy(text_layer_1);
 }
-
+/*
 void timer_callback() {
     send_msg();
+
     timer = app_timer_register(100, timer_callback, NULL);
 }
+*/
 
 static void app_message_init(void) {
     // Reduce the sniff interval for more responsive messaging at the expense of
@@ -84,10 +98,14 @@ static void app_message_init(void) {
     // unloaded
     app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
 
-    timer = app_timer_register(100, timer_callback, NULL);
+    //timer = app_timer_register(100, timer_callback, NULL);
+    app_message_register_outbox_failed(outbox_fail_callback);
+    app_message_register_outbox_sent(outbox_success_callback);
+    
 
     // Init buffers
     app_message_open(64, 16 * 9);
+    send_msg();
 }
 
 int main()
