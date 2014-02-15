@@ -32,6 +32,7 @@ void send_msg() {
 
 void outbox_fail_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) 
 {
+   app_log(APP_LOG_LEVEL_ERROR, "pebblelin.c", 31, "PROBLEM"); 
    send_msg(); 
 }
 
@@ -124,6 +125,7 @@ int main()
             });
     window_stack_push(window, true);
     app_event_loop();
+    app_message_deregister_callbacks();
     window_destroy(window);
 }
 
