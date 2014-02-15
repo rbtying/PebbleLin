@@ -46,7 +46,7 @@ void accel_handler(AccelData *data, uint32_t num_samples)
     // num_samples was set when calling accel_data_service_subscribe.
     static char buf[32];
 
-    float alpha = 0.8;
+    float alpha = 0.5;
 
     g[0] = g[0] * alpha + data->x * (1 - alpha);
     g[1] = g[1] * alpha + data->y * (1 - alpha);
@@ -60,9 +60,11 @@ void accel_handler(AccelData *data, uint32_t num_samples)
     v[1] += a[1] * (10.0 / 50);
     v[2] += a[2] * (10.0 / 50);
 
-    v[0] = 0.99 * v[0];
-    v[1] = 0.99 * v[1];
-    v[2] = 0.99 * v[2];
+    float decay = 0.99;
+
+    v[0] = decay * v[0];
+    v[1] = decay * v[1];
+    v[2] = decay * v[2];
 
     xsprintf(buf, "%d %d", v[1], data->y);
 
