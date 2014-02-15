@@ -1,12 +1,14 @@
 #include <pebble.h>
 #include "xprintf.h"
 
-Window *window;
-TextLayer *text_layer_1;
+static Window *window;
+static TextLayer *text_layer_1;
 
-int g[3];
-int a[3];
-int v[3];
+static int g[3];
+static int a[3];
+static int v[3];
+
+static AppTimer *timer;
 
 void send_msg() {
     DictionaryIterator *iter;
@@ -15,37 +17,17 @@ void send_msg() {
         return;
     }
 
-    if (dict_write_uint16(iter, 0, g[0]) != DICT_OK) {
-        return;
-    }
+    dict_write_uint16(iter, 0, g[0]);
+    dict_write_uint16(iter, 1, g[1]);
+    dict_write_uint16(iter, 2, g[2]);
+    dict_write_uint16(iter, 3, a[0]);
+    dict_write_uint16(iter, 4, a[1]);
+    dict_write_uint16(iter, 5, a[2]);
+    dict_write_uint16(iter, 6, v[0]);
+    dict_write_uint16(iter, 7, v[1]);
+    dict_write_uint16(iter, 8, v[2]);
 
-    if (dict_write_uint16(iter, 2, g[2]) != DICT_OK) {
-        return;
-    }
-
-    if (dict_write_uint16(iter, 3, a[0]) != DICT_OK) {
-        return;
-    }
-
-    if (dict_write_uint16(iter, 4, a[1]) != DICT_OK) {
-        return;
-    }
-
-    if (dict_write_uint16(iter, 5, a[2]) != DICT_OK) {
-        return;
-    }
-
-    if (dict_write_uint16(iter, 6, v[0]) != DICT_OK) {
-        return;
-    }
-
-    if (dict_write_uint16(iter, 7, v[1]) != DICT_OK) {
-        return;
-    }
-
-    if (dict_write_uint16(iter, 8, v[2]) != DICT_OK) {
-        return;
-    }
+    dict_write_end(iter);
 
     app_message_outbox_send();
 }
@@ -70,8 +52,6 @@ void accel_handler(AccelData *data, uint32_t num_samples)
 
     xsprintf(buf, "%d", v[1]);
 
-    send_msg();
-
     text_layer_set_text(text_layer_1, buf);
 }
 
@@ -91,19 +71,25 @@ void window_unload(Window *window)
     // Call this before destroying text_layer, because it can change the text
     // and this must only happen while the layer exists.
     accel_data_service_unsubscribe();
-
     text_layer_destroy(text_layer_1);
 }
 
-static void app_message_init(void) {
-  // Reduce the sniff interval for more responsive messaging at the expense of
-  // increased energy consumption by the Bluetooth module
-  // The sniff interval will be restored by the system after the app has been
-  // unloaded
-  app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+void timer_callback() {
+    send_msg();
+    timer = app_timer_register(100, timer_callback, NULL);
+}
 
-  // Init buffers
-  app_message_open(64, 16);
+static void app_message_init(void) {
+    // Reduce the sniff interval for more responsive messaging at the expense of
+    // increased energy consumption by the Bluetooth module
+    // The sniff interval will be restored by the system after the app has been
+    // unloaded
+    app_comm_set_sniff_interval(SNIFF_INTERVAL_REDUCED);
+
+    timer = app_timer_register(100, timer_callback, NULL);
+
+    // Init buffers
+    app_message_open(64, 16);
 }
 
 int main()
@@ -114,8 +100,8 @@ int main()
 
     window_set_window_handlers(window, (WindowHandlers)
             {
-                .load = window_load,
-                .unload = window_unload,
+            .load = window_load,
+            .unload = window_unload,
             });
     window_stack_push(window, true);
     app_event_loop();
