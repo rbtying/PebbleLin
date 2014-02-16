@@ -16,8 +16,8 @@
 
 package com.lynbrook.pebblelin;
 
+import java.util.Hashtable;
 import java.util.List;
-import java.util.Timer;
 import java.util.UUID;
 
 import android.annotation.TargetApi;
@@ -45,10 +45,13 @@ import com.getpebble.android.kit.util.PebbleDictionary;
 import com.levien.synthesizer.core.midi.MidiListener;
 import com.levien.synthesizer.core.music.Note;
 import com.lynbrook.pebblin.R;
+import com.philips.lighting.hue.listener.PHLightListener;
 import com.philips.lighting.hue.sdk.PHHueSDK;
 import com.philips.lighting.model.PHBridge;
+import com.philips.lighting.model.PHHueError;
 import com.philips.lighting.model.PHLight;
 import com.philips.lighting.model.PHLightState;
+import com.philips.lighting.model.PHLight.PHLightAlertMode;
 
 /**
  * Activity for simply playing the piano. This version is hacked up to send MIDI to the C++ engine.
@@ -57,10 +60,24 @@ import com.philips.lighting.model.PHLightState;
 public class PebblinActivity extends SynthActivity implements OnSharedPreferenceChangeListener,
         OnTouchListener {
 
+  private PHLightListener listener = new PHLightListener() {
+
+    public void onSuccess() {
+      Log.v("LIGHT", "Light written");
+
+    }
+
+    public void onStateUpdate(Hashtable<String, String> arg0, List<PHHueError> arg1) {}
+
+    public void onError(int arg0, String arg1) {
+      Log.v("LIGHT", arg1);
+
+    }
+  };
+
   private MidiListener midi = null;
 
   private PHHueSDK phHueSDK;
-  private static final int MAX_HUE = 65535;
 
   private int v[] = new int[3];
   private int g[] = new int[3];
@@ -74,16 +91,24 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
   private int notes[] = { 60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79, 81, 83, 84, 86, 88, 89,
           91, 93, 95, 96, 98, 100 };
 
+  private int mary_had_a_little_lamb[] = { 2, 1, 0, 1, 2, 2, 2, 1, 1, 1, 2, 4, 4, 2, 1, 0, 1, 2, 2,
+          2, 2, 1, 1, 2, 1, 0 };
+  private int tutorial_ptr = 0;
+
+  private boolean tutorial_mode = true;
+
+  private int BOW_FLAT = 46920;
+  private int BOW_TILT = 25500;
+
   private final static UUID PEBBLE_APP_UUID = UUID
           .fromString("ee0315aa-8439-48b6-a622-a05a0a99c640");
 
   private PebbleKit.PebbleDataReceiver dataReceiver;
 
-  Timer timer = new Timer();
-
   @Override
   public void onCreate(Bundle savedInstanceState) {
-    Log.d("synth", "activity onCreate " + getIntent());
+    Log.d("synth", "activity onCreate " +  getIntent());
+    tutorial_mode = getIntent().getExtras().getBoolean("toggle");
     setTitle(R.string.app_name);
     super.onCreate(savedInstanceState);
     getWindow().addFlags(
@@ -100,35 +125,104 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
     buttons[2] = (Button) findViewById(R.id.Button3);
     buttons[3] = (Button) findViewById(R.id.Button4);
 
-    System.out.println(buttons[0]);
-
     for (int i = 0; i < buttons.length; i++) {
       buttons[i].setOnTouchListener(this);
     }
 
+    updateLightbulb();
   }
 
-  static boolean derp = false;
-
-  public void updateLightbulb() {
-    Log.v("LIGHTS", "UPDAITING DA LIGHTSES");
+  public void setLightbulbForTutorial(int nextnote) {
     PHBridge bridge = phHueSDK.getSelectedBridge();
+    boolean bow_tilt = nextnote >= 4;
+    int idx = nextnote % 4;
+    int i = 0;
+
+    if (bridge != null) {
+      Log.v("LIGHTS", "UPDAITING DA LIGHTSES");
+      List<PHLight> allLights = bridge.getResourceCache().getAllLights();
+
+      for (PHLight light : allLights) {
+        PHLightState lightState = new PHLightState();
+        lightState.setTransitionTime(0);
+        if (idx == i) {
+          lightState.setSaturation(254);
+          lightState.setBrightness(254);
+          if (bow_tilt) {
+            lightState.setHue(BOW_TILT);
+          } else {
+            lightState.setHue(BOW_FLAT);
+          }
+          lightState.setOn(true);
+        } else {
+          lightState.setOn(false);
+        }
+        // lightState.setAlertMode(PHLightAlertMode.ALERT_SELECT);
+        bridge.updateLightState(light, lightState, listener);
+        i++;
+      }
+    }
+  }
+
+  public void setLightbulbForPlay() {
+    PHBridge bridge = phHueSDK.getSelectedBridge();
+    boolean bow_tilt = note_idx >= 4;
+    int idx = note_idx % 4;
+    int i = 0;
 
     if (bridge != null) {
       List<PHLight> allLights = bridge.getResourceCache().getAllLights();
 
-      PHLightState lightState = new PHLightState();
-
-      lightState.setHue((int) (note_idx * 1.0 / notes.length * MAX_HUE));
-      lightState.setTransitionTime(0);
-
       for (PHLight light : allLights) {
-        // To validate your lightstate is valid (before sending to the bridge) you can use:
-        // String validState = lightState.validateState();
-        bridge.updateLightState(light, lightState);
-        // bridge.updateLightState(light, lightState); // If no bridge response is required then use
-        // this simpler form.
+        PHLightState lightState = new PHLightState();
+        lightState.setOn(true);
+        lightState.setTransitionTime(1);
+        if (idx == i) {
+          lightState.setSaturation(254);
+          lightState.setBrightness(254);
+          if (bow_tilt) {
+            lightState.setHue(BOW_TILT);
+          } else {
+            lightState.setHue(BOW_FLAT);
+          }
+        } else {
+          lightState.setHue(0);
+        }
+        // lightState.setAlertMode(PHLightAlertMode.ALERT_SELECT);
+        bridge.updateLightState(light, lightState, listener);
+        i++;
       }
+    }
+  }
+
+  public void flashLightbulb(int nextnote) {
+    PHBridge bridge = phHueSDK.getSelectedBridge();
+    int idx = nextnote % 4;
+    if (bridge != null) {
+      List<PHLight> allLights = bridge.getResourceCache().getAllLights();
+      PHLightState lightState = new PHLightState();
+      lightState.setAlertMode(PHLightAlertMode.ALERT_SELECT);
+      lightState.setTransitionTime(0);
+      // lightState.setHue(0);
+      bridge.updateLightState(allLights.get(idx), lightState, listener);
+    }
+  }
+
+  public void updateLightbulb() {
+    if (tutorial_mode) {
+      Log.v("LIGHT", note_idx + " " + mary_had_a_little_lamb[tutorial_ptr]);
+      if (note_idx == mary_had_a_little_lamb[tutorial_ptr]) {
+        tutorial_ptr++;
+        if (tutorial_ptr >= mary_had_a_little_lamb.length) {
+          tutorial_mode = false;
+          return;
+        }
+      } else {
+        flashLightbulb(mary_had_a_little_lamb[tutorial_ptr]);
+      }
+      setLightbulbForTutorial(mary_had_a_little_lamb[tutorial_ptr]);
+    } else {
+      setLightbulbForPlay();
     }
   }
 
@@ -175,8 +269,8 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
       boolean nobuttonpressed = true;
       for (int i = 0; i < buttonpressed.length; i++) {
         if (buttonpressed[i]) {
-          if (k * 4 + i < notes.length) {
-            note_idx = k * 4 + i;
+          if (k * buttonpressed.length + i < notes.length) {
+            note_idx = k * buttonpressed.length + i;
             nobuttonpressed = false;
             break;
           }
@@ -187,12 +281,17 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
       }
 
       midi.onNoteOn(0, notes[note_idx], Math.abs(val) * 3);
-      String name = Note.getName(notes[note_idx] % 12);
-      Log.v("NOTE", name);
 
-      ((TextView) findViewById(R.id.noteName)).setText(name);
+      if (val != 0) {
+        String name = Note.getName(notes[note_idx] % 12);
+        Log.v("NOTE", name);
 
-      updateLightbulb();
+        updateLightbulb();
+        ((TextView) findViewById(R.id.noteName)).setText(name);
+      } else {
+        ((TextView) findViewById(R.id.noteName)).setText("");
+      }
+
     }
     p_val = val;
   }
@@ -229,12 +328,6 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
         Log.v("DATA RECEIVER", buf.toString());
       }
     };
-    timer.scheduleAtFixedRate(new java.util.TimerTask() {
-      @Override
-      public void run() {
-        updateLightbulb();
-      }
-    }, 1000, 1000);
     PebbleKit.registerReceivedDataHandler(this, dataReceiver);
     startWatchApp(null);
   }
@@ -250,7 +343,6 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
   @Override
   protected void onPause() {
     super.onPause();
-    timer.cancel();
     SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
     prefs.unregisterOnSharedPreferenceChangeListener(this);
     if (dataReceiver != null) {
@@ -323,6 +415,7 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
           case MotionEvent.ACTION_UP:
             buttonpressed[i] = false;
             processSignal();
+
             break;
           case MotionEvent.ACTION_DOWN:
             buttonpressed[i] = true;

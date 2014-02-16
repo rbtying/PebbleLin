@@ -268,6 +268,7 @@ public class PHHomeActivity extends Activity implements OnItemClickListener {
     Intent intent = new Intent(getApplicationContext(), PebblinActivity.class);
     intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    intent.putExtra("toggle",getIntent().getExtras().getBoolean("toggle"));
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) intent.addFlags(0x8000); // equal to
     startActivity(intent);
   }
