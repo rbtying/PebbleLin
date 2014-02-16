@@ -16,6 +16,7 @@
 
 package com.lynbrook.pebblelin;
 
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.UUID;
@@ -31,6 +32,7 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
 import android.view.WindowManager;
 import android.widget.AdapterView;
@@ -85,6 +87,7 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
 
   private Button[] buttons;
   private boolean buttonpressed[] = new boolean[4];
+  private Button saveButton;
   private int p_val = 0;
   private int note_idx = 0;
 
@@ -97,8 +100,13 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
 
   private boolean tutorial_mode = true;
 
-  private int BOW_FLAT = 46920;
-  private int BOW_TILT = 25500;
+  private static final int BOW_FLAT = 46920;
+  private static final int BOW_TILT = 25500;
+
+  private static final int NOTES_MAX_SIZE = 100;
+
+  private ArrayList<Integer> recentNotes = new ArrayList<Integer>();
+  int start = 0;
 
   private final static UUID PEBBLE_APP_UUID = UUID
           .fromString("ee0315aa-8439-48b6-a622-a05a0a99c640");
@@ -107,7 +115,7 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
-    Log.d("synth", "activity onCreate " +  getIntent());
+    Log.d("synth", "activity onCreate " + getIntent());
     tutorial_mode = getIntent().getExtras().getBoolean("toggle");
     setTitle(R.string.app_name);
     super.onCreate(savedInstanceState);
@@ -128,6 +136,21 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
     for (int i = 0; i < buttons.length; i++) {
       buttons[i].setOnTouchListener(this);
     }
+
+    saveButton = (Button) findViewById(R.id.SaveButton);
+    saveButton.setOnClickListener(new OnClickListener() {
+
+      public void onClick(View arg0) {
+        Intent intent = new Intent(getApplicationContext(), SendGridActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.putExtra("recentNotes", recentNotes);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) intent.addFlags(0x8000); // equal
+                                                                                             // to
+        startActivity(intent);
+      }
+
+    });
 
     updateLightbulb();
   }
@@ -283,8 +306,16 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
       midi.onNoteOn(0, notes[note_idx], Math.abs(val) * 3);
 
       if (val != 0) {
+
         String name = Note.getName(notes[note_idx] % 12);
         Log.v("NOTE", name);
+
+        if (recentNotes.size() < NOTES_MAX_SIZE) {
+          recentNotes.add(notes[note_idx]);
+        } else {
+          recentNotes.set(start, notes[note_idx]);
+          start = (start + 1) % NOTES_MAX_SIZE;
+        }
 
         updateLightbulb();
         ((TextView) findViewById(R.id.noteName)).setText(name);

@@ -53,6 +53,11 @@
             android:label="@string/app_name"
             android:screenOrientation="portrait" >
         </activity>
+        <activity
+            android:name="com.lynbrook.pebblelin.SendGridActivity"
+            android:label="@string/app_name"
+            android:screenOrientation="portrait" >
+        </activity>
 
         <service android:name="com.levien.synthesizer.android.service.SynthesizerService" >
         </service>
