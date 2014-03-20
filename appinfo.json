@@ -1,10 +1,10 @@
 {
   "uuid": "ee0315aa-8439-48b6-a622-a05a0a99c640",
-  "shortName": "pebblelin",
-  "longName": "pebblelin",
-  "companyName": "MakeAwesomeHappen",
+  "shortName": "Pebblin",
+  "longName": "Pebblin",
+  "companyName": "Pebblin",
   "versionCode": 1,
-  "versionLabel": "1.0.0",
+  "versionLabel": "1.0.1",
   "watchapp": {
     "watchface": false
   },
@@ -12,6 +12,51 @@
     "dummy": 0
   },
   "resources": {
-    "media": []
+    "media": [{
+        "type": "png",
+        "name": "IMAGE_MAIN",
+        "file": "main.png"
+    },
+    {
+        "type": "png",
+        "name": "NOTE_C",
+        "file": "note_c.png"
+    },
+    {
+        "type": "png",
+        "name": "NOTE_D",
+        "file": "note_d.png"
+    },
+    {
+        "type": "png",
+        "name": "NOTE_E",
+        "file": "note_e.png"
+    },
+    {
+        "type": "png",
+        "name": "NOTE_F",
+        "file": "note_f.png"
+    },
+    {
+        "type": "png",
+        "name": "NOTE_G",
+        "file": "note_g.png"
+    },
+    {
+        "type": "png",
+        "name": "NOTE_A",
+        "file": "note_a.png"
+    },
+    {
+        "type": "png",
+        "name": "NOTE_B",
+        "file": "note_b.png"
+    },
+    {
+        "type": "png",
+        "name": "NOTE_HI_C",
+        "file": "note_hi_c.png"
+    }
+    ]
   }
 }
