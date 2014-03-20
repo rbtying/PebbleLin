@@ -166,23 +166,25 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
       List<PHLight> allLights = bridge.getResourceCache().getAllLights();
 
       for (PHLight light : allLights) {
-        PHLightState lightState = new PHLightState();
-        lightState.setTransitionTime(0);
-        if (idx == i) {
-          lightState.setSaturation(254);
-          lightState.setBrightness(254);
-          if (bow_tilt) {
-            lightState.setHue(BOW_TILT);
+        if (light.isReachable()) {
+          PHLightState lightState = new PHLightState();
+          lightState.setTransitionTime(0);
+          if (idx == i) {
+            lightState.setSaturation(254);
+            lightState.setBrightness(254);
+            if (bow_tilt) {
+              lightState.setHue(BOW_TILT);
+            } else {
+              lightState.setHue(BOW_FLAT);
+            }
+            lightState.setOn(true);
           } else {
-            lightState.setHue(BOW_FLAT);
+            lightState.setOn(false);
           }
-          lightState.setOn(true);
-        } else {
-          lightState.setOn(false);
+          // lightState.setAlertMode(PHLightAlertMode.ALERT_SELECT);
+          bridge.updateLightState(light, lightState, listener);
+          i++;
         }
-        // lightState.setAlertMode(PHLightAlertMode.ALERT_SELECT);
-        bridge.updateLightState(light, lightState, listener);
-        i++;
       }
     }
   }
@@ -197,23 +199,25 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
       List<PHLight> allLights = bridge.getResourceCache().getAllLights();
 
       for (PHLight light : allLights) {
-        PHLightState lightState = new PHLightState();
-        lightState.setOn(true);
-        lightState.setTransitionTime(1);
-        if (idx == i) {
-          lightState.setSaturation(254);
-          lightState.setBrightness(254);
-          if (bow_tilt) {
-            lightState.setHue(BOW_TILT);
+        if (light.isReachable()) {
+          PHLightState lightState = new PHLightState();
+          lightState.setOn(true);
+          lightState.setTransitionTime(1);
+          if (idx == i) {
+            lightState.setSaturation(254);
+            lightState.setBrightness(254);
+            if (bow_tilt) {
+              lightState.setHue(BOW_TILT);
+            } else {
+              lightState.setHue(BOW_FLAT);
+            }
           } else {
-            lightState.setHue(BOW_FLAT);
+            lightState.setHue(0);
           }
-        } else {
-          lightState.setHue(0);
+          // lightState.setAlertMode(PHLightAlertMode.ALERT_SELECT);
+          bridge.updateLightState(light, lightState, listener);
+          i++;
         }
-        // lightState.setAlertMode(PHLightAlertMode.ALERT_SELECT);
-        bridge.updateLightState(light, lightState, listener);
-        i++;
       }
     }
   }
@@ -226,8 +230,17 @@ public class PebblinActivity extends SynthActivity implements OnSharedPreference
       PHLightState lightState = new PHLightState();
       lightState.setAlertMode(PHLightAlertMode.ALERT_SELECT);
       lightState.setTransitionTime(0);
-      // lightState.setHue(0);
-      bridge.updateLightState(allLights.get(idx), lightState, listener);
+
+      int i = 0;
+      for (PHLight light : allLights) {
+        if (light.isReachable()) {
+          if (i == idx) {
+            bridge.updateLightState(light, lightState, listener);
+            break;
+          }
+          i++;
+        }
+      }
     }
   }
 
