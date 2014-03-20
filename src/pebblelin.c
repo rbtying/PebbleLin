@@ -1,5 +1,4 @@
 #include <pebble.h>
-#include "xprintf.h"
 
 static Window *window;
 static TextLayer *text_layer_1;
@@ -66,7 +65,7 @@ void accel_handler(AccelData *data, uint32_t num_samples)
     v[1] = decay * v[1];
     v[2] = decay * v[2];
 
-    xsprintf(buf, "%d %d", v[1], data->y);
+    snprintf(buf, sizeof(buf), "%d %d", v[1], data->y);
 
     text_layer_set_text(text_layer_1, buf);
 }
